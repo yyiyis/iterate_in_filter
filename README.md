@@ -1,4 +1,4 @@
-🌀 we have already introduce how to iterate using map and pmap for one or more parameters.
+🌀 we have already introduce how to iterate using `map` and `pmap` for one or more parameters.
 
 
 But there exists another question: how to **Iterate in filter**!
