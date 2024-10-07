@@ -1,0 +1,150 @@
+---
+title: "Iterate in filter"
+subtitle: "pmap"
+author: "YYS"
+date: "2024-10-07"
+toc: true
+number-sections: true
+format:
+  html:
+    theme: litera
+---
+
+```{r setup}
+#| include: false
+knitr::opts_chunk$set(warning = F, message = F, dpi = 300)
+```
+
+```{r}
+#| include: false
+rm(list = ls())
+```
+
+🌀 we have already introduce how to iterate using `map` and `pmap` for one or more parameters.
+
+But there exists another question: how to **Iterate** in `filter`!
+
+Think about next scenario:
+
+-   I need to do the same thing in different sub-population, and I write a function, but I still repeat the function may times, and I don't want to repeat it too many times.
+
+------------------------------------------------------------------------
+
+# load packages and data
+
+```{r}
+library(tidyverse)
+```
+
+# example
+
+Let me give u an example
+
+-   we have 3 variables here: sex, edu and age
+
+-   we want to obtain the distribution of age in each subgroup (`sex == 1`, or `edu == 3`)
+
+-   so the first thing is to `filter` the subgroup (subgroup analysis is vary useful)
+
+> Note: there also exist other approach, today we want to introduce how to iterate with `filter`
+
+## data
+
+```{r}
+set.seed(567)
+df <- tibble(
+  sex = rep(c(0, 1), 5), 
+  edu = rep(c(1, 2, 3, 4, 5), 2), 
+  age = rnorm(10, mean = 60, sd = 5)
+)
+```
+
+## funtion 1
+
+so the first method, let us try `filter` directly
+
+```{r}
+attach(df)
+yysfun_filter_1 <- function(variable, value){
+  df |> 
+    filter(variable %in% value)
+}
+```
+
+```{r}
+yysfun_filter_1(sex, 0)
+```
+
+or
+
+```{r}
+yysfun_filter_1(edu, 1)
+```
+
+😀 **it works**!!
+
+But the question happens, we need to repeat `yysfun_filter_1` many times (in this example, **7** times)
+
+👌Fortunately, we have `pmap` ！
+
+------------------------------------------------------------------------
+
+## pamp
+
+To use pamp, we need to build up the Parameter combination
+
+```{r}
+df_itera <-
+  tibble(
+    variable = c(rep("sex", 2), 
+                 rep("edu", 3)),
+    value = c("0", "1", 
+              "1", "2", "3"))
+
+df_itera
+```
+
+if we still use the function_1, we will meet some issues:
+
+```{r}
+df_itera |> 
+  pmap(yysfun_filter_1)
+```
+
+-   👀 no output here ??
+
+------------------------------------------------------------------------
+
+🤔So where is the issue:
+
+-   the parameter we give `filter` is a Absolute value with quotation marks "sex"
+
+-   while `filter` cannot know it
+
+-   🎯Use `sym()` from `rlang` to **dynamically reference the column name**, and `!!` to dereference the symbol and pass it to filter();
+
+-   🧩meanwhile, we need to ensure that `value` is passed in list form and value is a character vector.
+
+see `function_2` for detail
+
+## function 2
+
+```{r}
+yysfun_filter_2 <- function(variable, value){
+  df |> 
+    filter(!!sym(variable) %in% flatten_chr(list(value)))
+}
+```
+
+```{r}
+df_itera |> 
+  pmap(yysfun_filter_2)
+```
+
+🗝️**It work**s !!!
+
+------------------------------------------------------------------------
+
+-   The magic of iteration is still fascinating
+
+-   The right tools can do more with less
